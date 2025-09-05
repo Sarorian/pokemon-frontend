@@ -2,32 +2,39 @@ import React, { useState } from "react";
 
 const MarketValueCalculator = () => {
   const [items, setItems] = useState([
-    { name: "", marketValue: "", percent: "" },
+    { name: "", marketValue: 0, percent: 0 },
   ]);
   const [total, setTotal] = useState(0);
 
+  // Handle changes to item inputs
   const handleItemChange = (index, field, value) => {
     const newItems = [...items];
-    newItems[index][field] = value;
+    // Ensure numeric fields are stored as numbers
+    if (field === "marketValue" || field === "percent") {
+      newItems[index][field] = parseFloat(value) || 0;
+    } else {
+      newItems[index][field] = value;
+    }
     setItems(newItems);
     calculateTotal(newItems);
   };
 
+  // Add a new item row
   const addItem = () => {
-    setItems([...items, { name: "", marketValue: "", percent: "" }]);
+    setItems([...items, { name: "", marketValue: 0, percent: 0 }]);
   };
 
+  // Remove an item row
   const removeItem = (index) => {
     const newItems = items.filter((_, i) => i !== index);
     setItems(newItems);
     calculateTotal(newItems);
   };
 
+  // Calculate total as sum of (marketValue * percent/100)
   const calculateTotal = (itemsList) => {
     const sum = itemsList.reduce((acc, item) => {
-      const value = parseFloat(item.marketValue) || 0;
-      const pct = parseFloat(item.percent) || 0;
-      return acc + value * (pct / 100); // <-- only the percent
+      return acc + item.marketValue * (item.percent / 100);
     }, 0);
     setTotal(sum.toFixed(2));
   };
