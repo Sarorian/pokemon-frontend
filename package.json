@@ -24,7 +24,7 @@
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
-  "homepage": "https://Sarorian.github.io/pokemon-page",
+  "homepage": "https://sarorian.github.io/pokemon-frontend/",
   "eslintConfig": {
     "extends": [
       "react-app",
