@@ -27,7 +27,7 @@ const MarketValueCalculator = () => {
     const sum = itemsList.reduce((acc, item) => {
       const value = parseFloat(item.marketValue) || 0;
       const pct = parseFloat(item.percent) || 0;
-      return acc + value * (1 + pct / 100);
+      return acc + value * (pct / 100); // <-- only the percent
     }, 0);
     setTotal(sum.toFixed(2));
   };
