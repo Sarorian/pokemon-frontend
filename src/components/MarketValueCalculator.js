@@ -5,11 +5,11 @@ const MarketValueCalculator = () => {
     { name: "", marketValue: 0, percent: 0 },
   ]);
   const [total, setTotal] = useState(0);
+  const [globalPercent, setGlobalPercent] = useState(0);
 
-  // Handle changes to item inputs
+  // Handle changes to individual item fields
   const handleItemChange = (index, field, value) => {
     const newItems = [...items];
-    // Ensure numeric fields are stored as numbers
     if (field === "marketValue" || field === "percent") {
       newItems[index][field] = parseFloat(value) || 0;
     } else {
@@ -37,6 +37,17 @@ const MarketValueCalculator = () => {
       return acc + item.marketValue * (item.percent / 100);
     }, 0);
     setTotal(sum.toFixed(2));
+  };
+
+  // Handle global percent change
+  const handleGlobalPercentChange = (value) => {
+    const percent = parseFloat(value) || 0;
+    setGlobalPercent(percent);
+
+    // Update all item percentages
+    const newItems = items.map((item) => ({ ...item, percent }));
+    setItems(newItems);
+    calculateTotal(newItems);
   };
 
   return (
@@ -87,6 +98,19 @@ const MarketValueCalculator = () => {
       <button onClick={addItem} style={{ marginBottom: "20px" }}>
         + Add Item
       </button>
+
+      {/* Global percent input */}
+      <div style={{ marginBottom: "20px" }}>
+        <label>
+          Set All %:{" "}
+          <input
+            type="number"
+            value={globalPercent}
+            onChange={(e) => handleGlobalPercentChange(e.target.value)}
+            style={{ width: "80px" }}
+          />
+        </label>
+      </div>
 
       <h3>Total: ${total}</h3>
     </div>
