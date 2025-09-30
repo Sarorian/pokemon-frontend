@@ -17,15 +17,15 @@ const Home = () => {
     const fetchData = async () => {
       try {
         // Fetch items
-        const itemsRes = await fetch("http://localhost:5000/api/items");
+        const itemsRes = await fetch(`${API_BASE}/api/items`);
         const itemsData = await itemsRes.json();
 
         // Fetch expenses
-        const expensesRes = await fetch("http://localhost:5000/api/expenses");
+        const expensesRes = await fetch(`${API_BASE}/api/expenses`);
         const expensesData = await expensesRes.json();
 
         // Fetch Other profits
-        const otherRes = await fetch("http://localhost:5000/api/other");
+        const otherRes = await fetch(`${API_BASE}/api/other`);
         const otherData = await otherRes.json();
 
         let profit = 0;
