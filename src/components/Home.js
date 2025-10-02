@@ -28,15 +28,18 @@ const Home = () => {
         const otherRes = await fetch(`${API_BASE}/api/other`);
         const otherData = await otherRes.json();
 
-        let profit = 0;
+        let totalPurchaseValue = 0;
+        let totalSoldValue = 0;
         let soldItems = 0;
         let unsoldItems = 0;
         let inventoryValue = 0;
 
         itemsData.forEach((item) => {
+          totalPurchaseValue += Number(item.purchasePrice);
+
           if (item.soldPrice != null) {
             soldItems++;
-            profit += Number(item.soldPrice) - Number(item.purchasePrice);
+            totalSoldValue += Number(item.soldPrice);
           } else {
             unsoldItems++;
             inventoryValue += Number(item.purchasePrice);
@@ -53,7 +56,10 @@ const Home = () => {
           0
         );
 
-        const netProfit = profit - totalExpenses + otherProfit;
+        // Corrected net profit formula
+        const netProfit =
+          -(totalPurchaseValue + totalExpenses) +
+          (totalSoldValue + otherProfit);
 
         setStats({
           netProfit,
@@ -73,7 +79,6 @@ const Home = () => {
 
     fetchData();
   }, []);
-
   if (loading) return <p>Loading...</p>;
 
   return (
