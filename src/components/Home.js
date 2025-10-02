@@ -56,10 +56,12 @@ const Home = () => {
           0
         );
 
-        // Corrected net profit formula
-        const netProfit =
-          -(totalPurchaseValue + totalExpenses) +
-          (totalSoldValue + otherProfit);
+        // New stats
+        const totalMoneyIn = totalSoldValue + otherProfit;
+        const totalMoneyOut = totalPurchaseValue + totalExpenses;
+
+        // Net Profit still follows your formula
+        const netProfit = -totalMoneyOut + totalMoneyIn;
 
         setStats({
           netProfit,
@@ -69,6 +71,8 @@ const Home = () => {
           inventoryValue,
           totalExpenses,
           otherProfit,
+          totalMoneyIn,
+          totalMoneyOut,
         });
         setLoading(false);
       } catch (err) {
@@ -79,6 +83,7 @@ const Home = () => {
 
     fetchData();
   }, []);
+
   if (loading) return <p>Loading...</p>;
 
   return (
@@ -105,6 +110,12 @@ const Home = () => {
         </p>
         <p>
           <strong>Inventory Value:</strong> ${stats.inventoryValue.toFixed(2)}
+        </p>
+        <p>
+          <strong>Total Money In:</strong> ${stats.totalMoneyIn.toFixed(2)}
+        </p>
+        <p>
+          <strong>Total Money Out:</strong> ${stats.totalMoneyOut.toFixed(2)}
         </p>
       </div>
     </div>
