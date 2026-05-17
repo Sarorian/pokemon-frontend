@@ -12,6 +12,37 @@ const typeBadge = (type) => {
   return <span className={`badge ${cls[type] || ""}`}>{type}</span>;
 };
 
+const paymentBadge = (method) => {
+  if (!method || method === "Cash")
+    return (
+      <span
+        className="badge"
+        style={{ background: "rgba(76,175,125,0.15)", color: "var(--green)" }}
+      >
+        Cash
+      </span>
+    );
+  if (method === "Digital - Ben")
+    return (
+      <span
+        className="badge"
+        style={{ background: "rgba(74,179,216,0.15)", color: "var(--blue)" }}
+      >
+        Digital - Ben
+      </span>
+    );
+  if (method === "Digital - Owen")
+    return (
+      <span
+        className="badge"
+        style={{ background: "rgba(232,184,75,0.12)", color: "var(--accent)" }}
+      >
+        Digital - Owen
+      </span>
+    );
+  return null;
+};
+
 const ItemsTable = () => {
   const [items, setItems] = useState([]);
   const [showSold, setShowSold] = useState(false);
@@ -21,6 +52,7 @@ const ItemsTable = () => {
   const [soldData, setSoldData] = useState({
     soldPrice: "",
     soldDate: today(),
+    paymentMethod: "Cash",
     notes: "",
   });
   const [toast, setToast] = useState({ msg: "", type: "success" });
@@ -47,7 +79,12 @@ const ItemsTable = () => {
 
   const handleMarkSold = (item) => {
     setEditingItemId(item._id);
-    setSoldData({ soldPrice: "", soldDate: today(), notes: item.notes || "" });
+    setSoldData({
+      soldPrice: "",
+      soldDate: today(),
+      paymentMethod: "Cash",
+      notes: item.notes || "",
+    });
   };
 
   const handleSubmit = async (itemId) => {
@@ -58,7 +95,12 @@ const ItemsTable = () => {
     });
     if (res.ok) {
       setEditingItemId(null);
-      setSoldData({ soldPrice: "", soldDate: today(), notes: "" });
+      setSoldData({
+        soldPrice: "",
+        soldDate: today(),
+        paymentMethod: "Cash",
+        notes: "",
+      });
       showToast("✓ Item marked as sold!");
       fetchItems();
     } else {
@@ -243,15 +285,23 @@ const ItemsTable = () => {
                 </div>
 
                 {item.soldPrice != null && (
-                  <div className="item-card__row">
-                    <span className="item-card__row-label">Sold</span>
-                    <span className="item-card__row-value">
-                      ${Number(item.soldPrice).toFixed(2)}
-                      {item.soldDate
-                        ? ` · ${new Date(item.soldDate).toLocaleDateString()}`
-                        : ""}
-                    </span>
-                  </div>
+                  <>
+                    <div className="item-card__row">
+                      <span className="item-card__row-label">Sold</span>
+                      <span className="item-card__row-value">
+                        ${Number(item.soldPrice).toFixed(2)}
+                        {item.soldDate
+                          ? ` · ${new Date(item.soldDate).toLocaleDateString()}`
+                          : ""}
+                      </span>
+                    </div>
+                    <div className="item-card__row">
+                      <span className="item-card__row-label">Payment</span>
+                      <span className="item-card__row-value">
+                        {paymentBadge(item.paymentMethod)}
+                      </span>
+                    </div>
+                  </>
                 )}
 
                 {profit !== null && (
@@ -306,6 +356,19 @@ const ItemsTable = () => {
                         value={soldData.soldDate}
                         onChange={handleEditChange}
                       />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Payment Method</label>
+                      <select
+                        name="paymentMethod"
+                        className="form-select"
+                        value={soldData.paymentMethod}
+                        onChange={handleEditChange}
+                      >
+                        <option value="Cash">Cash</option>
+                        <option value="Digital - Ben">Digital - Ben</option>
+                        <option value="Digital - Owen">Digital - Owen</option>
+                      </select>
                     </div>
                     <div className="form-group">
                       <label className="form-label">Notes</label>
