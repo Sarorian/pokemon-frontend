@@ -23,6 +23,7 @@ const StatCard = ({ label, value, color, accent }) => (
 const Home = () => {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -77,6 +78,7 @@ const Home = () => {
         });
       } catch (err) {
         console.error(err);
+        setError(true);
       } finally {
         setLoading(false);
       }
@@ -91,17 +93,26 @@ const Home = () => {
     <div>
       <h1 className="page-title">Dashboard</h1>
 
-      {loading ? (
+      {loading || !stats ? (
         <div className="stats-grid">
-          {Array(9)
-            .fill(0)
-            .map((_, i) => (
-              <SkeletonCard key={i} />
-            ))}
+          {error && !loading ? (
+            <div
+              style={{
+                gridColumn: "1 / -1",
+                color: "var(--danger)",
+                padding: 20,
+              }}
+            >
+              ⚠️ Could not load data. Check your connection or try refreshing.
+            </div>
+          ) : (
+            Array(9)
+              .fill(0)
+              .map((_, i) => <SkeletonCard key={i} />)
+          )}
         </div>
       ) : (
         <>
-          {/* Hero row */}
           <div className="stats-grid" style={{ marginBottom: 16 }}>
             <div
               className="stat-card stat-card--accent"
@@ -142,7 +153,6 @@ const Home = () => {
             />
           </div>
 
-          {/* Item stats */}
           <div className="stats-grid">
             <StatCard label="Total Items" value={stats.totalItems} />
             <StatCard
