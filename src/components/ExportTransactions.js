@@ -326,6 +326,7 @@ const ExportTransactions = () => {
                       <th>Profit</th>
                       <th>Payment</th>
                       <th>Date</th>
+                      <th>Notes</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -390,6 +391,14 @@ const ExportTransactions = () => {
                         </td>
                         <td style={{ color: "var(--text-muted)" }}>
                           {item.soldDate}
+                        </td>
+                        <td
+                          style={{
+                            color: "var(--text-muted)",
+                            fontStyle: "italic",
+                          }}
+                        >
+                          {item.notes || "—"}
                         </td>
                       </tr>
                     ))}
