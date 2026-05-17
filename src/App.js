@@ -31,8 +31,12 @@ function App() {
       <div className="app">
         <nav className="navbar">
           <div className="navbar__brand">
-            <span className="navbar__logo">◆</span>
-            <span className="navbar__title">O2 Cards</span>
+            <img
+              src={process.env.PUBLIC_URL + "/logo.png"}
+              alt="Statis Cards Logo"
+              className="navbar__logo-img"
+            />
+            <span className="navbar__title">Statis Cards</span>
           </div>
           <div className="navbar__links">
             <NavLink to="/">Dashboard</NavLink>
