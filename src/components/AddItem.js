@@ -10,7 +10,7 @@ const AddItem = () => {
     set: "",
     number: "",
     condition: "NM",
-    company: "",
+    company: "PSA",
     grade: "",
     purchasePrice: "",
     purchaseDate: today(),
@@ -60,7 +60,7 @@ const AddItem = () => {
           set: "",
           number: "",
           condition: "NM",
-          company: "",
+          company: "PSA",
           grade: "",
           purchasePrice: "",
           purchaseDate: today(),
@@ -83,7 +83,6 @@ const AddItem = () => {
 
       <div className="card" style={{ maxWidth: 640 }}>
         <form onSubmit={handleSubmit} className="form-grid" style={{ gap: 18 }}>
-          {/* Type & Owner */}
           <div className="form-grid form-grid-2">
             <div className="form-group">
               <label className="form-label">Item Type</label>
@@ -112,7 +111,6 @@ const AddItem = () => {
             </div>
           </div>
 
-          {/* Name */}
           <div className="form-group">
             <label className="form-label">Item Name *</label>
             <input
@@ -125,7 +123,6 @@ const AddItem = () => {
             />
           </div>
 
-          {/* Set & Number */}
           {(itemType === "Card" || itemType === "Slab") && (
             <div className="form-grid form-grid-2">
               <div className="form-group">
@@ -136,6 +133,7 @@ const AddItem = () => {
                   placeholder="e.g. Brilliant Stars"
                   value={formData.set}
                   onChange={handleChange}
+                  required
                 />
               </div>
               <div className="form-group">
@@ -146,12 +144,12 @@ const AddItem = () => {
                   placeholder="e.g. 018/172"
                   value={formData.number}
                   onChange={handleChange}
+                  required
                 />
               </div>
             </div>
           )}
 
-          {/* Condition */}
           {itemType === "Card" && (
             <div className="form-group">
               <label className="form-label">Condition</label>
@@ -170,27 +168,33 @@ const AddItem = () => {
             </div>
           )}
 
-          {/* Slab fields */}
           {itemType === "Slab" && (
             <div className="form-grid form-grid-2">
               <div className="form-group">
                 <label className="form-label">Grading Company</label>
-                <input
-                  className="form-input"
+                <select
+                  className="form-select"
                   name="company"
-                  placeholder="e.g. PSA, BGS"
                   value={formData.company}
                   onChange={handleChange}
-                />
+                >
+                  <option value="PSA">PSA</option>
+                  <option value="BGS">BGS</option>
+                  <option value="CGC">CGC</option>
+                  <option value="TAG">TAG</option>
+                  <option value="SGC">SGC</option>
+                  <option value="OTHER">Other</option>
+                </select>
               </div>
               <div className="form-group">
                 <label className="form-label">Grade</label>
                 <input
                   className="form-input"
                   name="grade"
-                  placeholder="e.g. 9, 10"
+                  placeholder="e.g. 9, 10, 9.5"
                   value={formData.grade}
                   onChange={handleChange}
+                  required
                 />
               </div>
             </div>

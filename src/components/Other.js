@@ -11,12 +11,14 @@ const Other = () => {
     date: today(),
     notes: "",
   });
-  const [toast, setToast] = useState("");
+  const [editingId, setEditingId] = useState(null);
+  const [editData, setEditData] = useState({});
+  const [toast, setToast] = useState({ msg: "", type: "success" });
   const [loading, setLoading] = useState(true);
 
-  const showToast = (msg) => {
-    setToast(msg);
-    setTimeout(() => setToast(""), 3000);
+  const showToast = (msg, type = "success") => {
+    setToast({ msg, type });
+    setTimeout(() => setToast({ msg: "", type: "success" }), 3000);
   };
 
   const fetchEntries = async () => {
@@ -32,16 +34,58 @@ const Other = () => {
 
   const handleChange = (e) =>
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  const handleEditChange = (e) =>
+    setEditData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    await fetch(`${API_BASE}/api/other`, {
+    const res = await fetch(`${API_BASE}/api/other`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(formData),
     });
-    setFormData({ name: "", amount: "", date: today(), notes: "" });
-    showToast("✓ Profit entry added!");
+    if (res.ok) {
+      setFormData({ name: "", amount: "", date: today(), notes: "" });
+      showToast("✓ Profit entry added!");
+      fetchEntries();
+    } else {
+      const data = await res.json();
+      showToast("Error: " + data.error, "error");
+    }
+  };
+
+  const handleEdit = (entry) => {
+    setEditingId(entry._id);
+    setEditData({
+      name: entry.name,
+      amount: entry.amount,
+      date: entry.date
+        ? new Date(entry.date).toISOString().split("T")[0]
+        : today(),
+      notes: entry.notes || "",
+    });
+  };
+
+  const handleEditSave = async (id) => {
+    const res = await fetch(`${API_BASE}/api/other/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(editData),
+    });
+    if (res.ok) {
+      setEditingId(null);
+      showToast("✓ Entry updated!");
+      fetchEntries();
+    } else {
+      const data = await res.json();
+      showToast("Error: " + data.error, "error");
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm("Delete this entry?")) return;
+    await fetch(`${API_BASE}/api/other/${id}`, { method: "DELETE" });
+    showToast("Entry deleted.");
     fetchEntries();
   };
 
@@ -140,13 +184,14 @@ const Other = () => {
                 <th>Amount</th>
                 <th>Date</th>
                 <th>Notes</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
               {entries.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={4}
+                    colSpan={5}
                     style={{
                       textAlign: "center",
                       color: "var(--text-muted)",
@@ -159,21 +204,97 @@ const Other = () => {
               ) : (
                 entries.map((entry) => (
                   <tr key={entry._id}>
-                    <td>{entry.name}</td>
-                    <td style={{ color: "var(--green)", fontWeight: 600 }}>
-                      +${Number(entry.amount).toFixed(2)}
-                    </td>
-                    <td style={{ color: "var(--text-muted)" }}>
-                      {new Date(entry.date).toLocaleDateString()}
-                    </td>
-                    <td
-                      style={{
-                        color: "var(--text-muted)",
-                        fontStyle: "italic",
-                      }}
-                    >
-                      {entry.notes || "—"}
-                    </td>
+                    {editingId === entry._id ? (
+                      <>
+                        <td>
+                          <input
+                            className="form-input"
+                            name="name"
+                            value={editData.name}
+                            onChange={handleEditChange}
+                            style={{ minWidth: 120 }}
+                          />
+                        </td>
+                        <td>
+                          <input
+                            className="form-input"
+                            type="number"
+                            name="amount"
+                            value={editData.amount}
+                            onChange={handleEditChange}
+                            style={{ minWidth: 80 }}
+                          />
+                        </td>
+                        <td>
+                          <input
+                            className="form-input"
+                            type="date"
+                            name="date"
+                            value={editData.date}
+                            onChange={handleEditChange}
+                          />
+                        </td>
+                        <td>
+                          <input
+                            className="form-input"
+                            name="notes"
+                            value={editData.notes}
+                            onChange={handleEditChange}
+                            style={{ minWidth: 100 }}
+                          />
+                        </td>
+                        <td>
+                          <div style={{ display: "flex", gap: 6 }}>
+                            <button
+                              className="btn btn-success btn-sm"
+                              onClick={() => handleEditSave(entry._id)}
+                            >
+                              Save
+                            </button>
+                            <button
+                              className="btn btn-secondary btn-sm"
+                              onClick={() => setEditingId(null)}
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </td>
+                      </>
+                    ) : (
+                      <>
+                        <td>{entry.name}</td>
+                        <td style={{ color: "var(--green)", fontWeight: 600 }}>
+                          +${Number(entry.amount).toFixed(2)}
+                        </td>
+                        <td style={{ color: "var(--text-muted)" }}>
+                          {new Date(entry.date).toLocaleDateString()}
+                        </td>
+                        <td
+                          style={{
+                            color: "var(--text-muted)",
+                            fontStyle: "italic",
+                          }}
+                        >
+                          {entry.notes || "—"}
+                        </td>
+                        <td>
+                          <div style={{ display: "flex", gap: 6 }}>
+                            <button
+                              className="btn btn-secondary btn-sm"
+                              onClick={() => handleEdit(entry)}
+                            >
+                              Edit
+                            </button>
+                            <button
+                              className="btn btn-danger btn-sm"
+                              onClick={() => handleDelete(entry._id)}
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </td>
+                      </>
+                    )}
                   </tr>
                 ))
               )}
@@ -182,7 +303,9 @@ const Other = () => {
         </div>
       )}
 
-      {toast && <div className="toast toast-success">{toast}</div>}
+      {toast.msg && (
+        <div className={`toast toast-${toast.type}`}>{toast.msg}</div>
+      )}
     </div>
   );
 };

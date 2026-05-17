@@ -12,12 +12,14 @@ const Expenses = () => {
     date: today(),
     notes: "",
   });
-  const [toast, setToast] = useState("");
+  const [editingId, setEditingId] = useState(null);
+  const [editData, setEditData] = useState({});
+  const [toast, setToast] = useState({ msg: "", type: "success" });
   const [loading, setLoading] = useState(true);
 
-  const showToast = (msg) => {
-    setToast(msg);
-    setTimeout(() => setToast(""), 3000);
+  const showToast = (msg, type = "success") => {
+    setToast({ msg, type });
+    setTimeout(() => setToast({ msg: "", type: "success" }), 3000);
   };
 
   const fetchExpenses = async () => {
@@ -33,22 +35,63 @@ const Expenses = () => {
 
   const handleChange = (e) =>
     setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  const handleEditChange = (e) =>
+    setEditData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    await fetch(`${API_BASE}/api/expenses`, {
+    const res = await fetch(`${API_BASE}/api/expenses`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(formData),
     });
-    setFormData({
-      name: "",
-      category: "",
-      amount: "",
-      date: today(),
-      notes: "",
+    if (res.ok) {
+      setFormData({
+        name: "",
+        category: "",
+        amount: "",
+        date: today(),
+        notes: "",
+      });
+      showToast("✓ Expense added!");
+      fetchExpenses();
+    } else {
+      const data = await res.json();
+      showToast("Error: " + data.error, "error");
+    }
+  };
+
+  const handleEdit = (exp) => {
+    setEditingId(exp._id);
+    setEditData({
+      name: exp.name,
+      category: exp.category || "",
+      amount: exp.amount,
+      date: exp.date ? new Date(exp.date).toISOString().split("T")[0] : today(),
+      notes: exp.notes || "",
     });
-    showToast("✓ Expense added!");
+  };
+
+  const handleEditSave = async (id) => {
+    const res = await fetch(`${API_BASE}/api/expenses/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(editData),
+    });
+    if (res.ok) {
+      setEditingId(null);
+      showToast("✓ Expense updated!");
+      fetchExpenses();
+    } else {
+      const data = await res.json();
+      showToast("Error: " + data.error, "error");
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm("Delete this expense?")) return;
+    await fetch(`${API_BASE}/api/expenses/${id}`, { method: "DELETE" });
+    showToast("Expense deleted.");
     fetchExpenses();
   };
 
@@ -159,13 +202,14 @@ const Expenses = () => {
                 <th>Amount</th>
                 <th>Date</th>
                 <th>Notes</th>
+                <th></th>
               </tr>
             </thead>
             <tbody>
               {expenses.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={5}
+                    colSpan={6}
                     style={{
                       textAlign: "center",
                       color: "var(--text-muted)",
@@ -178,36 +222,123 @@ const Expenses = () => {
               ) : (
                 expenses.map((exp) => (
                   <tr key={exp._id}>
-                    <td>{exp.name}</td>
-                    <td>
-                      {exp.category ? (
-                        <span
-                          className="badge"
+                    {editingId === exp._id ? (
+                      <>
+                        <td>
+                          <input
+                            className="form-input"
+                            name="name"
+                            value={editData.name}
+                            onChange={handleEditChange}
+                            style={{ minWidth: 120 }}
+                          />
+                        </td>
+                        <td>
+                          <input
+                            className="form-input"
+                            name="category"
+                            value={editData.category}
+                            onChange={handleEditChange}
+                            style={{ minWidth: 100 }}
+                          />
+                        </td>
+                        <td>
+                          <input
+                            className="form-input"
+                            type="number"
+                            name="amount"
+                            value={editData.amount}
+                            onChange={handleEditChange}
+                            style={{ minWidth: 80 }}
+                          />
+                        </td>
+                        <td>
+                          <input
+                            className="form-input"
+                            type="date"
+                            name="date"
+                            value={editData.date}
+                            onChange={handleEditChange}
+                          />
+                        </td>
+                        <td>
+                          <input
+                            className="form-input"
+                            name="notes"
+                            value={editData.notes}
+                            onChange={handleEditChange}
+                            style={{ minWidth: 100 }}
+                          />
+                        </td>
+                        <td>
+                          <div style={{ display: "flex", gap: 6 }}>
+                            <button
+                              className="btn btn-success btn-sm"
+                              onClick={() => handleEditSave(exp._id)}
+                            >
+                              Save
+                            </button>
+                            <button
+                              className="btn btn-secondary btn-sm"
+                              onClick={() => setEditingId(null)}
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </td>
+                      </>
+                    ) : (
+                      <>
+                        <td>{exp.name}</td>
+                        <td>
+                          {exp.category ? (
+                            <span
+                              className="badge"
+                              style={{
+                                background: "rgba(255,203,5,0.1)",
+                                color: "var(--accent)",
+                              }}
+                            >
+                              {exp.category}
+                            </span>
+                          ) : (
+                            <span style={{ color: "var(--text-muted)" }}>
+                              —
+                            </span>
+                          )}
+                        </td>
+                        <td style={{ color: "var(--danger)", fontWeight: 600 }}>
+                          ${Number(exp.amount).toFixed(2)}
+                        </td>
+                        <td style={{ color: "var(--text-muted)" }}>
+                          {new Date(exp.date).toLocaleDateString()}
+                        </td>
+                        <td
                           style={{
-                            background: "rgba(255,203,5,0.1)",
-                            color: "var(--accent)",
+                            color: "var(--text-muted)",
+                            fontStyle: "italic",
                           }}
                         >
-                          {exp.category}
-                        </span>
-                      ) : (
-                        <span style={{ color: "var(--text-muted)" }}>—</span>
-                      )}
-                    </td>
-                    <td style={{ color: "var(--danger)", fontWeight: 600 }}>
-                      ${Number(exp.amount).toFixed(2)}
-                    </td>
-                    <td style={{ color: "var(--text-muted)" }}>
-                      {new Date(exp.date).toLocaleDateString()}
-                    </td>
-                    <td
-                      style={{
-                        color: "var(--text-muted)",
-                        fontStyle: "italic",
-                      }}
-                    >
-                      {exp.notes || "—"}
-                    </td>
+                          {exp.notes || "—"}
+                        </td>
+                        <td>
+                          <div style={{ display: "flex", gap: 6 }}>
+                            <button
+                              className="btn btn-secondary btn-sm"
+                              onClick={() => handleEdit(exp)}
+                            >
+                              Edit
+                            </button>
+                            <button
+                              className="btn btn-danger btn-sm"
+                              onClick={() => handleDelete(exp._id)}
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        </td>
+                      </>
+                    )}
                   </tr>
                 ))
               )}
@@ -216,7 +347,9 @@ const Expenses = () => {
         </div>
       )}
 
-      {toast && <div className="toast toast-success">{toast}</div>}
+      {toast.msg && (
+        <div className={`toast toast-${toast.type}`}>{toast.msg}</div>
+      )}
     </div>
   );
 };

@@ -23,7 +23,13 @@ const ItemsTable = () => {
     soldDate: today(),
     notes: "",
   });
+  const [toast, setToast] = useState({ msg: "", type: "success" });
   const [loading, setLoading] = useState(true);
+
+  const showToast = (msg, type = "success") => {
+    setToast({ msg, type });
+    setTimeout(() => setToast({ msg: "", type: "success" }), 3000);
+  };
 
   const fetchItems = async () => {
     const res = await fetch(`${API_BASE}/api/items`);
@@ -45,13 +51,26 @@ const ItemsTable = () => {
   };
 
   const handleSubmit = async (itemId) => {
-    await fetch(`${API_BASE}/api/items/${itemId}`, {
+    const res = await fetch(`${API_BASE}/api/items/${itemId}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(soldData),
     });
-    setEditingItemId(null);
-    setSoldData({ soldPrice: "", soldDate: today(), notes: "" });
+    if (res.ok) {
+      setEditingItemId(null);
+      setSoldData({ soldPrice: "", soldDate: today(), notes: "" });
+      showToast("✓ Item marked as sold!");
+      fetchItems();
+    } else {
+      const data = await res.json();
+      showToast("Error: " + data.error, "error");
+    }
+  };
+
+  const handleDelete = async (id, name) => {
+    if (!window.confirm(`Delete "${name}"? This cannot be undone.`)) return;
+    await fetch(`${API_BASE}/api/items/${id}`, { method: "DELETE" });
+    showToast("Item deleted.");
     fetchItems();
   };
 
@@ -261,7 +280,7 @@ const ItemsTable = () => {
                   </div>
                 )}
 
-                {/* Mark as Sold form */}
+                {/* Mark as Sold inline form */}
                 {item.soldPrice == null && editingItemId === item._id && (
                   <div className="sell-form">
                     <div className="form-group">
@@ -302,9 +321,9 @@ const ItemsTable = () => {
                   </div>
                 )}
 
-                {item.soldPrice == null && (
-                  <div className="item-card__actions">
-                    {editingItemId === item._id ? (
+                <div className="item-card__actions">
+                  {item.soldPrice == null &&
+                    (editingItemId === item._id ? (
                       <>
                         <button
                           className="btn btn-success btn-sm"
@@ -326,13 +345,23 @@ const ItemsTable = () => {
                       >
                         Mark as Sold
                       </button>
-                    )}
-                  </div>
-                )}
+                    ))}
+                  <button
+                    className="btn btn-danger btn-sm"
+                    onClick={() => handleDelete(item._id, item.name)}
+                    style={{ marginLeft: "auto" }}
+                  >
+                    Delete
+                  </button>
+                </div>
               </div>
             );
           })}
         </div>
+      )}
+
+      {toast.msg && (
+        <div className={`toast toast-${toast.type}`}>{toast.msg}</div>
       )}
     </div>
   );
