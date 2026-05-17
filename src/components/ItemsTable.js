@@ -1,6 +1,17 @@
 import React, { useEffect, useState } from "react";
 import { API_BASE } from "../config";
 
+const today = () => new Date().toISOString().split("T")[0];
+
+const typeBadge = (type) => {
+  const cls = {
+    Card: "badge-card",
+    Slab: "badge-slab",
+    Sealed: "badge-sealed",
+  };
+  return <span className={`badge ${cls[type] || ""}`}>{type}</span>;
+};
+
 const ItemsTable = () => {
   const [items, setItems] = useState([]);
   const [showSold, setShowSold] = useState(false);
@@ -9,7 +20,7 @@ const ItemsTable = () => {
   const [editingItemId, setEditingItemId] = useState(null);
   const [soldData, setSoldData] = useState({
     soldPrice: "",
-    soldDate: "",
+    soldDate: today(),
     notes: "",
   });
   const [loading, setLoading] = useState(true);
@@ -25,8 +36,12 @@ const ItemsTable = () => {
     fetchItems();
   }, []);
 
-  const handleEditChange = (e) => {
+  const handleEditChange = (e) =>
     setSoldData({ ...soldData, [e.target.name]: e.target.value });
+
+  const handleMarkSold = (item) => {
+    setEditingItemId(item._id);
+    setSoldData({ soldPrice: "", soldDate: today(), notes: item.notes || "" });
   };
 
   const handleSubmit = async (itemId) => {
@@ -36,195 +51,289 @@ const ItemsTable = () => {
       body: JSON.stringify(soldData),
     });
     setEditingItemId(null);
-    setSoldData({ soldPrice: "", soldDate: "", notes: "" });
+    setSoldData({ soldPrice: "", soldDate: today(), notes: "" });
     fetchItems();
   };
 
-  if (loading) return <p>Loading...</p>;
-
-  // Filtered & searched items
   const filteredItems = items.filter((item) => {
     const soldCondition = showSold || item.soldPrice == null;
     const typeCondition = typeFilter === "All" || item.itemType === typeFilter;
+    const q = searchQuery.toLowerCase();
     const searchCondition =
-      item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (item.set &&
-        item.set.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (item.number &&
-        item.number.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (item.owner &&
-        item.owner.toLowerCase().includes(searchQuery.toLowerCase()));
+      item.name.toLowerCase().includes(q) ||
+      (item.set && item.set.toLowerCase().includes(q)) ||
+      (item.number && item.number.toLowerCase().includes(q)) ||
+      (item.owner && item.owner.toLowerCase().includes(q));
     return soldCondition && typeCondition && searchCondition;
   });
 
-  return (
-    <div style={{ padding: "20px" }}>
-      <h2>Inventory</h2>
+  if (loading) {
+    return (
+      <div>
+        <h1 className="page-title">Inventory</h1>
+        <div className="inventory-grid">
+          {Array(6)
+            .fill(0)
+            .map((_, i) => (
+              <div key={i} className="card">
+                <div
+                  className="skeleton"
+                  style={{ height: 16, width: "70%", marginBottom: 14 }}
+                />
+                <div
+                  className="skeleton"
+                  style={{ height: 12, width: "50%", marginBottom: 8 }}
+                />
+                <div
+                  className="skeleton"
+                  style={{ height: 12, width: "90%", marginBottom: 8 }}
+                />
+                <div
+                  className="skeleton"
+                  style={{ height: 12, width: "60%" }}
+                />
+              </div>
+            ))}
+        </div>
+      </div>
+    );
+  }
 
-      {/* Filters & Search */}
-      <div
-        style={{
-          marginBottom: "15px",
-          display: "flex",
-          flexWrap: "wrap",
-          gap: "10px",
-          alignItems: "center",
-        }}
-      >
-        <button onClick={() => setShowSold((prev) => !prev)}>
-          {showSold ? "Hide Sold Items" : "Show Sold Items"}
+  return (
+    <div>
+      <div className="section-header">
+        <h1 className="page-title" style={{ marginBottom: 0 }}>
+          Inventory
+        </h1>
+        <span style={{ color: "var(--text-muted)", fontSize: 14 }}>
+          {filteredItems.length} item{filteredItems.length !== 1 ? "s" : ""}
+        </span>
+      </div>
+
+      <div className="filter-bar">
+        <button
+          className={`btn btn-sm ${showSold ? "btn-secondary" : "btn-primary"}`}
+          onClick={() => setShowSold((p) => !p)}
+        >
+          {showSold ? "Hide Sold" : "Show Sold"}
         </button>
 
-        <label>
-          Filter by Type:{" "}
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span className="form-label" style={{ marginBottom: 0 }}>
+            Type:
+          </span>
           <select
+            className="form-select"
             value={typeFilter}
             onChange={(e) => setTypeFilter(e.target.value)}
+            style={{ width: "auto" }}
           >
             <option value="All">All</option>
             <option value="Card">Card</option>
             <option value="Slab">Slab</option>
             <option value="Sealed">Sealed</option>
           </select>
-        </label>
+        </div>
 
         <input
           type="text"
-          placeholder="Search by Name, Set, Number, Owner..."
+          className="form-input"
+          placeholder="Search name, set, number, owner..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          style={{ flex: "1 1 200px", padding: "5px" }}
+          style={{ flex: "1 1 200px" }}
         />
       </div>
 
-      {/* Items as responsive cards */}
-      <div
-        style={{
-          display: "grid",
-          gap: "15px",
-          gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
-        }}
-      >
-        {filteredItems.map((item) => (
-          <div
-            key={item._id}
-            style={{
-              border: "1px solid #ccc",
-              borderRadius: "8px",
-              padding: "15px",
-              backgroundColor: "#f9f9f9",
-            }}
-          >
-            <h3 style={{ margin: "0 0 10px 0" }}>
-              {item.name} ({item.itemType})
-            </h3>
+      {filteredItems.length === 0 ? (
+        <div
+          className="card"
+          style={{
+            textAlign: "center",
+            padding: 48,
+            color: "var(--text-muted)",
+          }}
+        >
+          No items match your filters.
+        </div>
+      ) : (
+        <div className="inventory-grid">
+          {filteredItems.map((item) => {
+            const profit =
+              item.soldPrice != null
+                ? Number(item.soldPrice) - Number(item.purchasePrice)
+                : null;
 
-            <div style={{ marginBottom: "8px" }}>
-              <strong>Details:</strong>
-              {item.itemType === "Card" && (
-                <div>
-                  Set: {item.set || "-"} | Number: {item.number || "-"} | Cond:{" "}
-                  {item.condition || "-"}
-                </div>
-              )}
-              {item.itemType === "Slab" && (
-                <div>
-                  Company: {item.company || "-"} | Set: {item.set || "-"} |
-                  Grade: {item.grade || "-"}
-                </div>
-              )}
-              {item.itemType === "Sealed" && <div>-</div>}
-            </div>
-
-            <div style={{ marginBottom: "8px" }}>
-              <strong>Purchase:</strong>
-              <div>Price: ${item.purchasePrice}</div>
-              <div>
-                Date:{" "}
-                {item.purchaseDate
-                  ? new Date(item.purchaseDate).toLocaleDateString()
-                  : "-"}
-              </div>
-            </div>
-
-            <div style={{ marginBottom: "8px" }}>
-              <strong>Sold:</strong>
-              {editingItemId === item._id ? (
-                <div
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "5px",
-                  }}
-                >
-                  <input
-                    type="number"
-                    name="soldPrice"
-                    value={soldData.soldPrice}
-                    onChange={handleEditChange}
-                    placeholder="Price"
-                  />
-                  <input
-                    type="date"
-                    name="soldDate"
-                    value={soldData.soldDate}
-                    onChange={handleEditChange}
-                  />
-                </div>
-              ) : item.soldPrice != null ? (
-                <div>
-                  <div>Price: ${item.soldPrice}</div>
-                  <div>
-                    Date: {new Date(item.soldDate).toLocaleDateString()}
+            return (
+              <div
+                key={item._id}
+                className={`item-card ${item.soldPrice != null ? "item-card--sold" : ""}`}
+              >
+                <div className="item-card__header">
+                  <div className="item-card__name">{item.name}</div>
+                  <div
+                    style={{
+                      display: "flex",
+                      gap: 5,
+                      flexShrink: 0,
+                      flexWrap: "wrap",
+                    }}
+                  >
+                    {typeBadge(item.itemType)}
+                    {item.soldPrice != null ? (
+                      <span className="badge badge-sold">Sold</span>
+                    ) : (
+                      <span className="badge badge-unsold">Active</span>
+                    )}
                   </div>
                 </div>
-              ) : (
-                <div>-</div>
-              )}
-            </div>
 
-            <div style={{ marginBottom: "8px" }}>
-              <strong>Notes:</strong>{" "}
-              {editingItemId === item._id ? (
-                <input
-                  type="text"
-                  name="notes"
-                  value={soldData.notes}
-                  onChange={handleEditChange}
-                />
-              ) : (
-                item.notes || "-"
-              )}
-            </div>
+                {item.itemType === "Card" && (
+                  <div className="item-card__row">
+                    <span className="item-card__row-label">Set / # / Cond</span>
+                    <span className="item-card__row-value">
+                      {item.set || "—"} · {item.number || "—"} ·{" "}
+                      {item.condition || "—"}
+                    </span>
+                  </div>
+                )}
+                {item.itemType === "Slab" && (
+                  <div className="item-card__row">
+                    <span className="item-card__row-label">Grade</span>
+                    <span className="item-card__row-value">
+                      {item.company || "—"} {item.grade || "—"}
+                    </span>
+                  </div>
+                )}
 
-            <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-              <div>
-                <strong>Owner:</strong> {item.owner || "-"}
-              </div>
-              <div>
-                {item.soldPrice == null ? (
-                  editingItemId === item._id ? (
-                    <>
-                      <button onClick={() => handleSubmit(item._id)}>
-                        Save
+                <div className="item-card__row">
+                  <span className="item-card__row-label">Owner</span>
+                  <span className="item-card__row-value">
+                    {item.owner || "—"}
+                  </span>
+                </div>
+
+                <div className="item-card__row">
+                  <span className="item-card__row-label">Bought</span>
+                  <span className="item-card__row-value">
+                    ${Number(item.purchasePrice).toFixed(2)}
+                    {item.purchaseDate
+                      ? ` · ${new Date(item.purchaseDate).toLocaleDateString()}`
+                      : ""}
+                  </span>
+                </div>
+
+                {item.soldPrice != null && (
+                  <div className="item-card__row">
+                    <span className="item-card__row-label">Sold</span>
+                    <span className="item-card__row-value">
+                      ${Number(item.soldPrice).toFixed(2)}
+                      {item.soldDate
+                        ? ` · ${new Date(item.soldDate).toLocaleDateString()}`
+                        : ""}
+                    </span>
+                  </div>
+                )}
+
+                {profit !== null && (
+                  <div className="item-card__row">
+                    <span className="item-card__row-label">Profit</span>
+                    <span
+                      style={{
+                        fontWeight: 700,
+                        color: profit >= 0 ? "var(--green)" : "var(--danger)",
+                      }}
+                    >
+                      {profit >= 0 ? "+" : ""}${profit.toFixed(2)}
+                    </span>
+                  </div>
+                )}
+
+                {item.notes && (
+                  <div className="item-card__row">
+                    <span className="item-card__row-label">Notes</span>
+                    <span
+                      className="item-card__row-value"
+                      style={{ fontStyle: "italic" }}
+                    >
+                      {item.notes}
+                    </span>
+                  </div>
+                )}
+
+                {/* Mark as Sold form */}
+                {item.soldPrice == null && editingItemId === item._id && (
+                  <div className="sell-form">
+                    <div className="form-group">
+                      <label className="form-label">Sold Price</label>
+                      <input
+                        type="number"
+                        name="soldPrice"
+                        className="form-input"
+                        value={soldData.soldPrice}
+                        onChange={handleEditChange}
+                        placeholder="0.00"
+                        step="0.01"
+                        min="0"
+                        autoFocus
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Sold Date</label>
+                      <input
+                        type="date"
+                        name="soldDate"
+                        className="form-input"
+                        value={soldData.soldDate}
+                        onChange={handleEditChange}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">Notes</label>
+                      <input
+                        type="text"
+                        name="notes"
+                        className="form-input"
+                        value={soldData.notes}
+                        onChange={handleEditChange}
+                        placeholder="Optional..."
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {item.soldPrice == null && (
+                  <div className="item-card__actions">
+                    {editingItemId === item._id ? (
+                      <>
+                        <button
+                          className="btn btn-success btn-sm"
+                          onClick={() => handleSubmit(item._id)}
+                        >
+                          Save
+                        </button>
+                        <button
+                          className="btn btn-secondary btn-sm"
+                          onClick={() => setEditingItemId(null)}
+                        >
+                          Cancel
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        className="btn btn-primary btn-sm"
+                        onClick={() => handleMarkSold(item)}
+                      >
+                        Mark as Sold
                       </button>
-                      <button onClick={() => setEditingItemId(null)}>
-                        Cancel
-                      </button>
-                    </>
-                  ) : (
-                    <button onClick={() => setEditingItemId(item._id)}>
-                      Mark as Sold
-                    </button>
-                  )
-                ) : (
-                  "Sold"
+                    )}
+                  </div>
                 )}
               </div>
-            </div>
-          </div>
-        ))}
-      </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 };
